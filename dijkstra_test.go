@@ -20,9 +20,13 @@ import (
 	"testing"
 )
 
-type BinVertex uint32
+type BinGraph struct{}
 
-func (v BinVertex) Edges() []BinEdge {
+type BinEdge struct {
+	from, to uint32
+}
+
+func (g *BinGraph) Neighbours(v uint32) []BinEdge {
 	var res []BinEdge
 	res = append(res, BinEdge{from: v, to: v + 1})
 	if v > 0 {
@@ -35,24 +39,21 @@ func (v BinVertex) Edges() []BinEdge {
 	return res
 }
 
-type BinEdge struct {
-	from, to BinVertex
-}
-
-func (e BinEdge) From() BinVertex {
-	return e.from
-}
-
-func (e BinEdge) To() BinVertex {
-	return e.to
-}
-
-func (e BinEdge) Length() float64 {
+func (g *BinGraph) Length(e BinEdge) float64 {
 	return 1 + 1/float64(e.from)
 }
 
+func (g *BinGraph) From(e BinEdge) uint32 {
+	return e.from
+}
+
+func (g *BinGraph) To(e BinEdge) uint32 {
+	return e.to
+}
+
 func TestBinary(t *testing.T) {
-	path, err := ShortestPath[BinEdge, BinVertex, float64](BinVertex(100), BinVertex(1000))
+	g := &BinGraph{}
+	path, err := ShortestPath[uint32, BinEdge, float64](g, 100, 1000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,11 +62,11 @@ func TestBinary(t *testing.T) {
 	}
 }
 
-type CircNode int
+type Circle int
 
-func (n CircNode) Edges() []CircEdge {
-	var res CircNode
-	if n >= 10 {
+func (g Circle) Neighbours(n int) []CircEdge {
+	var res int
+	if n >= int(g) {
 		res = 0
 	} else {
 		res = n + 1
@@ -73,27 +74,28 @@ func (n CircNode) Edges() []CircEdge {
 	return []CircEdge{{from: n, to: res}}
 }
 
-type CircEdge struct {
-	from, to CircNode
-}
-
-func (e CircEdge) From() CircNode {
-	return e.from
-}
-
-func (e CircEdge) To() CircNode {
-	return e.to
-}
-
-func (e CircEdge) Length() uint {
+func (g Circle) Length(e CircEdge) int {
 	return 1
 }
 
-func TestCircular(t *testing.T) {
-	from := CircNode(10)
+func (g Circle) From(e CircEdge) int {
+	return e.from
+}
 
-	for _, to := range []CircNode{9, 10, 11} {
-		path, err := ShortestPath[CircEdge, CircNode, uint](from, to)
+func (g Circle) To(e CircEdge) int {
+	return e.to
+}
+
+type CircEdge struct {
+	from, to int
+}
+
+func TestCircular(t *testing.T) {
+	g := Circle(10)
+	from := 10
+
+	for _, to := range []int{9, 10, 11} {
+		path, err := ShortestPath[int, CircEdge, int](g, from, to)
 		switch {
 		case to > 10:
 			if err != ErrNoPath || path != nil {

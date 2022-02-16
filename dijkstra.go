@@ -23,38 +23,33 @@ import (
 	"errors"
 )
 
-// Vertex represents a vertex in a directed graph.
-type Vertex[edge any] interface {
-	comparable
-	Edges() []edge
+// Graph represents a directed graph.
+type Graph[vertex comparable, edge any, length constraints.Ordered] interface {
+	Neighbours(v vertex) []edge
+	Length(e edge) length
+	From(e edge) vertex
+	To(e edge) vertex
 }
 
-// Edge represents an edge in a directed graph.
-type Edge[vertex any, length constraints.Ordered] interface {
-	From() vertex
-	To() vertex
-	Length() length
-}
-
-// ShortestPath returns the shortest path from the start vertex to the end vertex.
-func ShortestPath[edge Edge[vertex, length], vertex Vertex[edge], length constraints.Ordered](start, end vertex) ([]edge, error) {
-	pq := &priorityQueue[edge, vertex, length]{
+// ShortestPath returns the shortest path between two given vertices.
+func ShortestPath[vertex comparable, edge any, length constraints.Ordered](g Graph[vertex, edge, length], start, end vertex) ([]edge, error) {
+	pq := &priorityQueue[vertex, edge, length]{
 		index: make(map[vertex]int),
 	}
 	done := make(map[vertex]bool)
 
-	best := &candidate[edge, vertex, length]{to: start}
+	best := &candidate[vertex, edge, length]{to: start}
 	var zeroLength length
 	for best.to != end {
 		done[best.to] = true
 
-		for _, e := range best.to.Edges() {
-			v := e.To()
+		for _, e := range g.Neighbours(best.to) {
+			v := g.To(e)
 			if done[v] {
 				continue
 			}
 
-			l := e.Length()
+			l := g.Length(e)
 			if l <= zeroLength {
 				return nil, ErrInvalidLength
 			}
@@ -62,7 +57,7 @@ func ShortestPath[edge Edge[vertex, length], vertex Vertex[edge], length constra
 
 			idx, ok := pq.index[v]
 			if !ok {
-				cand := &candidate[edge, vertex, length]{
+				cand := &candidate[vertex, edge, length]{
 					to:     v,
 					via:    e,
 					length: total,
@@ -80,7 +75,7 @@ func ShortestPath[edge Edge[vertex, length], vertex Vertex[edge], length constra
 		if pq.Len() == 0 {
 			return nil, ErrNoPath
 		}
-		best = heap.Pop(pq).(*candidate[edge, vertex, length])
+		best = heap.Pop(pq).(*candidate[vertex, edge, length])
 	}
 
 	var path []edge
@@ -95,31 +90,31 @@ func ShortestPath[edge Edge[vertex, length], vertex Vertex[edge], length constra
 	return path, nil
 }
 
-type candidate[edge Edge[vertex, length], vertex Vertex[edge], length constraints.Ordered] struct {
+type candidate[vertex comparable, edge any, length constraints.Ordered] struct {
 	to     vertex
 	via    edge
 	length length
-	prev   *candidate[edge, vertex, length]
+	prev   *candidate[vertex, edge, length]
 }
 
-type priorityQueue[edge Edge[vertex, length], vertex Vertex[edge], length constraints.Ordered] struct {
-	candidates []*candidate[edge, vertex, length]
+type priorityQueue[vertex comparable, edge any, length constraints.Ordered] struct {
+	candidates []*candidate[vertex, edge, length]
 	index      map[vertex]int
 }
 
 // Len implements heap.Interface
-func (s *priorityQueue[edge, vertex, length]) Len() int {
+func (s *priorityQueue[vertex, edge, length]) Len() int {
 	return len(s.candidates)
 }
 
 // Less implements heap.Interface
-func (s *priorityQueue[edge, vertex, length]) Less(i, j int) bool {
+func (s *priorityQueue[vertex, edge, length]) Less(i, j int) bool {
 	cand := s.candidates
 	return cand[i].length < cand[j].length
 }
 
 // Swap implements heap.Interface
-func (s *priorityQueue[edge, vertex, length]) Swap(i, j int) {
+func (s *priorityQueue[vertex, edge, length]) Swap(i, j int) {
 	cand := s.candidates
 	cand[i], cand[j] = cand[j], cand[i]
 	s.index[cand[i].to] = i
@@ -127,14 +122,14 @@ func (s *priorityQueue[edge, vertex, length]) Swap(i, j int) {
 }
 
 // Push implements heap.Interface
-func (s *priorityQueue[edge, vertex, length]) Push(x interface{}) {
-	cand := x.(*candidate[edge, vertex, length])
+func (s *priorityQueue[vertex, edge, length]) Push(x interface{}) {
+	cand := x.(*candidate[vertex, edge, length])
 	s.index[cand.to] = len(s.candidates)
 	s.candidates = append(s.candidates, cand)
 }
 
 // Pop implements heap.Interface
-func (s *priorityQueue[edge, vertex, length]) Pop() interface{} {
+func (s *priorityQueue[vertex, edge, length]) Pop() interface{} {
 	l := len(s.candidates)
 	x := s.candidates[l-1]
 	s.candidates = s.candidates[:l-1]
