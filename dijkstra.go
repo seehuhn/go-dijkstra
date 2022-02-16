@@ -44,7 +44,7 @@ func ShortestPath[edge Edge[vertex, length], vertex Vertex[edge], length constra
 	done := make(map[vertex]bool)
 
 	best := &candidate[edge, vertex, length]{to: start}
-	var zeroCost length
+	var zeroLength length
 	for best.to != end {
 		done[best.to] = true
 
@@ -54,11 +54,11 @@ func ShortestPath[edge Edge[vertex, length], vertex Vertex[edge], length constra
 				continue
 			}
 
-			cost := e.Length()
-			if cost <= zeroCost {
-				return nil, ErrInvalidCost
+			l := e.Length()
+			if l <= zeroLength {
+				return nil, ErrInvalidLength
 			}
-			total := best.length + cost
+			total := best.length + l
 
 			idx, ok := pq.index[v]
 			if !ok {
@@ -151,6 +151,6 @@ func reverse[S ~[]E, E any](s S) {
 
 // Errors returned by ShortestPath.
 var (
-	ErrInvalidCost = errors.New("edge length not strictly positive")
-	ErrNoPath      = errors.New("no path found")
+	ErrInvalidLength = errors.New("edge length not strictly positive")
+	ErrNoPath        = errors.New("no path found")
 )
