@@ -27,7 +27,6 @@ import (
 type Graph[vertex comparable, edge any, length constraints.Ordered] interface {
 	Neighbours(v vertex) []edge
 	Length(e edge) length
-	From(e edge) vertex
 	To(e edge) vertex
 }
 

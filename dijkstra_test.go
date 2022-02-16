@@ -43,10 +43,6 @@ func (g *BinGraph) Length(e BinEdge) float64 {
 	return 1 + 1/float64(e.from)
 }
 
-func (g *BinGraph) From(e BinEdge) uint32 {
-	return e.from
-}
-
 func (g *BinGraph) To(e BinEdge) uint32 {
 	return e.to
 }
@@ -76,10 +72,6 @@ func (g Circle) Neighbours(n int) []CircEdge {
 
 func (g Circle) Length(e CircEdge) int {
 	return 1
-}
-
-func (g Circle) From(e CircEdge) int {
-	return e.from
 }
 
 func (g Circle) To(e CircEdge) int {
