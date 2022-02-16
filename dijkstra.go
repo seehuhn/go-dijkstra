@@ -26,6 +26,8 @@ import (
 // Vertex represents a vertex in a directed graph.
 type Vertex[edge any] interface {
 	comparable
+
+	// Edges returns the outgoing edges from this vertex.
 	Edges() []edge
 }
 
