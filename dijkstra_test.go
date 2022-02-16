@@ -17,7 +17,6 @@
 package dijkstra
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -48,14 +47,18 @@ func (e BinEdge) To() BinVertex {
 	return e.to
 }
 
-func (e BinEdge) Cost() int {
-	return int(e.from) + 1
+func (e BinEdge) Length() float64 {
+	return 1 + 1/float64(e.from)
 }
 
 func TestBinary(t *testing.T) {
-	ee, l := ShortestPath[int, BinEdge](BinVertex(100), BinVertex(1000))
-	fmt.Println(ee, l)
-	t.Error("fish")
+	path, err := ShortestPath[BinEdge, BinVertex, float64](BinVertex(100), BinVertex(1000))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(path) < 2 || path[0].from != 100 || path[len(path)-1].to != 1000 {
+		t.Error("wrong path")
+	}
 }
 
 type CircNode int
@@ -82,12 +85,34 @@ func (e CircEdge) To() CircNode {
 	return e.to
 }
 
-func (e CircEdge) Cost() uint {
+func (e CircEdge) Length() uint {
 	return 1
 }
 
 func TestCircular(t *testing.T) {
-	ee, l := ShortestPath[uint, CircEdge](CircNode(10), CircNode(11))
-	fmt.Println(ee, l)
-	t.Error("fish")
+	from := CircNode(10)
+
+	for _, to := range []CircNode{9, 10, 11} {
+		path, err := ShortestPath[CircEdge, CircNode, uint](from, to)
+		switch {
+		case to > 10:
+			if err != ErrNoPath || path != nil {
+				t.Error("wrong path found")
+			}
+		case to == from:
+			if err != nil || len(path) != 0 {
+				t.Error("wrong empty path")
+			}
+		default:
+			if err != nil {
+				t.Error(err)
+			}
+			if len(path) != int(to+10-from)%10+1 {
+				t.Error("wrong path length")
+			}
+			if path[0].from != from || path[len(path)-1].to != to {
+				t.Error("wrong path")
+			}
+		}
+	}
 }
