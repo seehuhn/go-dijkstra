@@ -69,7 +69,6 @@ func (h *heap[vertex, edge, length]) Less(i, j int) bool {
 // The complexity is O(log n) where n = h.Len().
 func (h *heap[vertex, edge, length]) Push(cand *candidate[vertex, edge, length]) {
 	n := len(h.candidates)
-	h.index[cand.to] = n
 	h.candidates = append(h.candidates, cand)
 	h.up(n)
 }
@@ -83,11 +82,10 @@ func (h *heap[vertex, edge, length]) Pop() *candidate[vertex, edge, length] {
 	n := len(cc) - 1
 
 	x := cc[0]
-	delete(h.index, x.to)
+	h.index[x.to] = -1
 
 	if n > 0 {
 		cc[0] = cc[n]
-		h.index[cc[0].to] = 0
 		h.down(0, n)
 	}
 	h.candidates = cc[:n]
@@ -146,9 +144,6 @@ func (h *heap[vertex, edge, length]) down(i0, n int) bool {
 		i = j
 	}
 
-	if i > i0 {
-		h.index[cand[i].to] = i
-		return true
-	}
-	return false
+	h.index[cand[i].to] = i
+	return i > i0
 }

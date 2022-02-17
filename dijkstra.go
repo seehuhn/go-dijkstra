@@ -51,28 +51,23 @@ func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], sta
 	pq := &heap[vertex, edge, length]{
 		index: make(map[vertex]int),
 	}
-	done := make(map[vertex]bool)
 
 	var best *candidate[vertex, edge, length]
 	to := start
 	var prevTotal length
 	for to != end {
-		done[to] = true
-
 		for _, e := range g.Edges(to) {
-			v := g.To(e)
-			if done[v] {
-				continue
-			}
-
 			l := g.Length(e)
 			if l < 0 {
 				return nil, ErrInvalidLength
 			}
 			total := prevTotal + l
 
+			v := g.To(e)
 			idx, ok := pq.index[v]
-			if !ok {
+			if idx < 0 {
+				continue
+			} else if !ok {
 				cand := &candidate[vertex, edge, length]{
 					to:    v,
 					via:   e,
