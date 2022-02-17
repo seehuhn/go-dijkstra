@@ -18,11 +18,10 @@
 package dijkstra
 
 import (
-	"container/heap"
 	"errors"
 )
 
-// V descrives the possible vertex types.
+// V describes the possible vertex types.
 type V comparable
 
 // E describes the possible edge types
@@ -49,16 +48,18 @@ type Graph[vertex V, edge E, length L] interface {
 
 // ShortestPath returns the shortest path between two vertices.
 func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], start, end vertex) ([]edge, error) {
-	pq := &priorityQueue[vertex, edge, length]{
+	pq := &heap[vertex, edge, length]{
 		index: make(map[vertex]int),
 	}
 	done := make(map[vertex]bool)
 
-	best := &candidate[vertex, edge, length]{to: start}
-	for best.to != end {
-		done[best.to] = true
+	var best *candidate[vertex, edge, length]
+	to := start
+	var prevTotal length
+	for to != end {
+		done[to] = true
 
-		for _, e := range g.Edges(best.to) {
+		for _, e := range g.Edges(to) {
 			v := g.To(e)
 			if done[v] {
 				continue
@@ -68,33 +69,36 @@ func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], sta
 			if l < 0 {
 				return nil, ErrInvalidLength
 			}
-			total := best.length + l
+			total := prevTotal + l
 
 			idx, ok := pq.index[v]
 			if !ok {
 				cand := &candidate[vertex, edge, length]{
-					to:     v,
-					via:    e,
-					length: total,
-					prev:   best,
+					to:    v,
+					via:   e,
+					total: total,
+					prev:  best,
 				}
-				heap.Push(pq, cand)
-			} else if cand := pq.candidates[idx]; total < cand.length {
+				pq.Push(cand)
+			} else if cand := pq.candidates[idx]; total < cand.total {
 				cand.via = e
-				cand.length = total
+				cand.total = total
 				cand.prev = best
-				heap.Fix(pq, idx)
+
+				pq.Fix(idx)
 			}
 		}
 
-		if pq.Len() == 0 {
+		if len(pq.candidates) == 0 {
 			return nil, ErrNoPath
 		}
-		best = heap.Pop(pq).(*candidate[vertex, edge, length])
+		best = pq.Pop()
+		to = g.To(best.via)
+		prevTotal = best.total
 	}
 
 	var path []edge
-	for best.prev != nil {
+	for best != nil {
 		edge := best.via
 		path = append(path, edge)
 		best = best.prev
@@ -106,53 +110,6 @@ func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], sta
 	}
 
 	return path, nil
-}
-
-type candidate[vertex V, edge E, length L] struct {
-	to     vertex
-	via    edge
-	length length
-	prev   *candidate[vertex, edge, length]
-}
-
-type priorityQueue[vertex V, edge E, length L] struct {
-	candidates []*candidate[vertex, edge, length]
-	index      map[vertex]int
-}
-
-// Len implements heap.Interface
-func (s *priorityQueue[vertex, edge, length]) Len() int {
-	return len(s.candidates)
-}
-
-// Less implements heap.Interface
-func (s *priorityQueue[vertex, edge, length]) Less(i, j int) bool {
-	cand := s.candidates
-	return cand[i].length < cand[j].length
-}
-
-// Swap implements heap.Interface
-func (s *priorityQueue[vertex, edge, length]) Swap(i, j int) {
-	cand := s.candidates
-	cand[i], cand[j] = cand[j], cand[i]
-	s.index[cand[i].to] = i
-	s.index[cand[j].to] = j
-}
-
-// Push implements heap.Interface
-func (s *priorityQueue[vertex, edge, length]) Push(x interface{}) {
-	cand := x.(*candidate[vertex, edge, length])
-	s.index[cand.to] = len(s.candidates)
-	s.candidates = append(s.candidates, cand)
-}
-
-// Pop implements heap.Interface
-func (s *priorityQueue[vertex, edge, length]) Pop() interface{} {
-	l := len(s.candidates)
-	x := s.candidates[l-1]
-	s.candidates = s.candidates[:l-1]
-	delete(s.index, x.to)
-	return x
 }
 
 // Errors returned by ShortestPath.

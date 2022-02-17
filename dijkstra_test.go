@@ -1,4 +1,4 @@
-// seehuhn.de/go/dijkstra - find shortest paths in directed graphs
+// seehuhn.de/go/dijkstra - shortest paths in directed graphs
 // Copyright (C) 2022  Jochen Voss <voss@seehuhn.de>
 //
 // This program is free software: you can redistribute it and/or modify
@@ -56,6 +56,11 @@ func TestBinary(t *testing.T) {
 	if len(path) < 2 || path[0].from != 100 || path[len(path)-1].to != 1000 {
 		t.Error("wrong path")
 	}
+	for i := 1; i < len(path); i++ {
+		if path[i].from != path[i-1].to {
+			t.Error("wrong path")
+		}
+	}
 }
 
 type Circle int
@@ -108,5 +113,56 @@ func TestCircular(t *testing.T) {
 				t.Error("wrong path")
 			}
 		}
+	}
+}
+
+type BinaryTree struct{}
+
+func (t BinaryTree) Edges(v uint64) []uint64 {
+	return []uint64{2 * v, 2*v + 1}
+}
+
+func (t BinaryTree) Length(e uint64) int {
+	return 1
+}
+
+func (t BinaryTree) To(e uint64) uint64 {
+	return e
+}
+
+func BenchmarkBinaryTree(b *testing.B) {
+	g := &BinaryTree{}
+	for i := 0; i < b.N; i++ {
+		ShortestPath[uint64, uint64, int](g, 1, 1000)
+	}
+}
+
+type walkPos struct {
+	x, y int16
+}
+
+type walk struct{}
+
+func (w walk) Edges(v walkPos) []walkPos {
+	return []walkPos{
+		{x: v.x + 1, y: v.y},
+		{x: v.x, y: v.y + 1},
+		{x: v.x - 1, y: v.y},
+		{x: v.x, y: v.y - 1},
+	}
+}
+
+func (w walk) Length(e walkPos) int {
+	return 1
+}
+
+func (w walk) To(e walkPos) walkPos {
+	return e
+}
+
+func BenchmarkWalk(b *testing.B) {
+	g := &walk{}
+	for i := 0; i < b.N; i++ {
+		ShortestPath[walkPos, walkPos, int](g, walkPos{}, walkPos{x: 4, y: 6})
 	}
 }
