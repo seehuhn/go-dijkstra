@@ -26,7 +26,7 @@ type BinEdge struct {
 	from, to uint32
 }
 
-func (g *BinGraph) Neighbours(v uint32) []BinEdge {
+func (g *BinGraph) Edges(v uint32) []BinEdge {
 	var res []BinEdge
 	res = append(res, BinEdge{from: v, to: v + 1})
 	if v > 0 {
@@ -60,7 +60,7 @@ func TestBinary(t *testing.T) {
 
 type Circle int
 
-func (g Circle) Neighbours(n int) []CircEdge {
+func (g Circle) Edges(n int) []CircEdge {
 	var res int
 	if n >= int(g) {
 		res = 0

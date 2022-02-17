@@ -18,38 +18,54 @@
 package dijkstra
 
 import (
-	"constraints"
 	"container/heap"
 	"errors"
 )
 
+// V descrives the possible vertex types.
+type V comparable
+
+// E describes the possible edge types
+type E any
+
+// L describes the possible types for edge lengths.
+type L interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
+		~float32 | ~float64
+}
+
 // Graph represents a directed graph.
-type Graph[vertex comparable, edge any, length constraints.Ordered] interface {
-	Neighbours(v vertex) []edge
+type Graph[vertex V, edge E, length L] interface {
+	// Edge returns the outgoing edges from the given vertex.
+	Edges(v vertex) []edge
+
+	// Length returns the length of the given edge.
 	Length(e edge) length
+
+	// To returns the target vertex of the given edge.
 	To(e edge) vertex
 }
 
-// ShortestPath returns the shortest path between two given vertices.
-func ShortestPath[vertex comparable, edge any, length constraints.Ordered](g Graph[vertex, edge, length], start, end vertex) ([]edge, error) {
+// ShortestPath returns the shortest path between two vertices.
+func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], start, end vertex) ([]edge, error) {
 	pq := &priorityQueue[vertex, edge, length]{
 		index: make(map[vertex]int),
 	}
 	done := make(map[vertex]bool)
 
 	best := &candidate[vertex, edge, length]{to: start}
-	var zeroLength length
 	for best.to != end {
 		done[best.to] = true
 
-		for _, e := range g.Neighbours(best.to) {
+		for _, e := range g.Edges(best.to) {
 			v := g.To(e)
 			if done[v] {
 				continue
 			}
 
 			l := g.Length(e)
-			if l <= zeroLength {
+			if l < 0 {
 				return nil, ErrInvalidLength
 			}
 			total := best.length + l
@@ -84,19 +100,22 @@ func ShortestPath[vertex comparable, edge any, length constraints.Ordered](g Gra
 		best = best.prev
 	}
 
-	reverse(path)
+	// reverse the path
+	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
+		path[i], path[j] = path[j], path[i]
+	}
 
 	return path, nil
 }
 
-type candidate[vertex comparable, edge any, length constraints.Ordered] struct {
+type candidate[vertex V, edge E, length L] struct {
 	to     vertex
 	via    edge
 	length length
 	prev   *candidate[vertex, edge, length]
 }
 
-type priorityQueue[vertex comparable, edge any, length constraints.Ordered] struct {
+type priorityQueue[vertex V, edge E, length L] struct {
 	candidates []*candidate[vertex, edge, length]
 	index      map[vertex]int
 }
@@ -136,15 +155,8 @@ func (s *priorityQueue[vertex, edge, length]) Pop() interface{} {
 	return x
 }
 
-// https://stackoverflow.com/a/28058324/648741
-func reverse[S ~[]E, E any](s S) {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-}
-
 // Errors returned by ShortestPath.
 var (
-	ErrInvalidLength = errors.New("edge length not strictly positive")
-	ErrNoPath        = errors.New("no path found")
+	ErrInvalidLength = errors.New("negative edge length")
+	ErrNoPath        = errors.New("path does not exist")
 )
