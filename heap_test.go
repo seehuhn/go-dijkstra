@@ -86,23 +86,23 @@ func TestHeap(t *testing.T) {
 		index: make(map[int]int),
 	}
 
-	type C = candidate[int, int, int]
+	type C = subPath[int, int, int]
 
 	// increasing order
 	for i := 100; i < 400; i += 10 {
-		h.Push(&C{to: i, via: 0, total: i, prev: nil})
+		h.Add(&C{to: i, finalEdge: 0, total: i, prev: nil})
 	}
 	h.verify(t, 0)
 
 	// decreasing order
 	for i := 900; i > 600; i -= 10 {
-		h.Push(&C{to: i, via: 0, total: i, prev: nil})
+		h.Add(&C{to: i, finalEdge: 0, total: i, prev: nil})
 	}
 	h.verify(t, 0)
 
 	// interleaved with previous entries
 	for i := 15; i < 1000; i += 30 {
-		h.Push(&C{to: i, via: 0, total: i, prev: nil})
+		h.Add(&C{to: i, finalEdge: 0, total: i, prev: nil})
 	}
 	h.verify(t, 0)
 
@@ -115,13 +115,13 @@ mainLoop:
 				if h.candidates[pos].total < last {
 					last = h.candidates[pos].total
 				}
-				h.Fix(pos)
+				h.Update(pos)
 				h.verify(t, 0)
 				continue mainLoop
 			}
 		}
 
-		c := h.Pop()
+		c := h.Shortest()
 		if last > c.total {
 			t.Errorf("wrong order: %d > %d", last, c.total)
 		}

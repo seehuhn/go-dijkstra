@@ -65,6 +65,10 @@ func TestBinary(t *testing.T) {
 
 type Circle int
 
+type CircEdge struct {
+	from, to int
+}
+
 func (g Circle) Edges(n int) []CircEdge {
 	var res int
 	if n >= int(g) {
@@ -81,10 +85,6 @@ func (g Circle) Length(e CircEdge) int {
 
 func (g Circle) To(e CircEdge) int {
 	return e.to
-}
-
-type CircEdge struct {
-	from, to int
 }
 
 func TestCircular(t *testing.T) {

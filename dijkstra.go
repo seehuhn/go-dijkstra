@@ -24,10 +24,11 @@ import (
 // V describes the possible vertex types.
 type V comparable
 
-// E describes the possible edge types
+// E describes the possible edge types.
 type E any
 
 // L describes the possible types for edge lengths.
+// While signed types are allowed, actual edge lengths must be positive.
 type L interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 |
 		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
@@ -36,67 +37,64 @@ type L interface {
 
 // Graph represents a directed graph.
 type Graph[vertex V, edge E, length L] interface {
-	// Edge returns the outgoing edges from the given vertex.
+	// Edge returns the outgoing edges of the given vertex.
 	Edges(v vertex) []edge
 
-	// Length returns the length of the given edge.
+	// Length returns the length of an edge.
 	Length(e edge) length
 
-	// To returns the target vertex of the given edge.
+	// To returns the endpoint of an edge.
 	To(e edge) vertex
 }
 
 // ShortestPath returns the shortest path between two vertices.
 func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], start, end vertex) ([]edge, error) {
-	pq := &heap[vertex, edge, length]{
-		index: make(map[vertex]int),
-	}
+	pq := newHeap[vertex, edge, length]()
 
-	var best *candidate[vertex, edge, length]
-	to := start
-	var prevTotal length
-	for to != end {
-		for _, e := range g.Edges(to) {
-			l := g.Length(e)
-			if l < 0 {
+	var shortestPath *subPath[vertex, edge, length]
+	var prevPathLength length
+
+	currentVertex := start
+	for currentVertex != end {
+		for _, e := range g.Edges(currentVertex) {
+			edgeLength := g.Length(e)
+			if edgeLength < 0 {
 				return nil, ErrInvalidLength
 			}
-			total := prevTotal + l
+			pathLength := prevPathLength + edgeLength
 
 			v := g.To(e)
 			idx, ok := pq.index[v]
-			if idx < 0 {
+			if idx < 0 { // vertex v has already been visited
 				continue
-			} else if !ok {
-				cand := &candidate[vertex, edge, length]{
-					to:    v,
-					via:   e,
-					total: total,
-					prev:  best,
+			} else if !ok { // vertex seen for the first time
+				cand := &subPath[vertex, edge, length]{
+					to:        v,
+					finalEdge: e,
+					total:     pathLength,
+					prev:      shortestPath,
 				}
-				pq.Push(cand)
-			} else if cand := pq.candidates[idx]; total < cand.total {
-				cand.via = e
-				cand.total = total
-				cand.prev = best
-
-				pq.Fix(idx)
+				pq.Add(cand)
+			} else if cand := pq.candidates[idx]; pathLength < cand.total {
+				cand.finalEdge = e
+				cand.total = pathLength
+				cand.prev = shortestPath
+				pq.Update(idx)
 			}
 		}
 
 		if len(pq.candidates) == 0 {
 			return nil, ErrNoPath
 		}
-		best = pq.Pop()
-		to = g.To(best.via)
-		prevTotal = best.total
+		shortestPath = pq.Shortest()
+		currentVertex = g.To(shortestPath.finalEdge)
+		prevPathLength = shortestPath.total
 	}
 
 	var path []edge
-	for best != nil {
-		edge := best.via
-		path = append(path, edge)
-		best = best.prev
+	for shortestPath != nil {
+		path = append(path, shortestPath.finalEdge)
+		shortestPath = shortestPath.prev
 	}
 
 	// reverse the path

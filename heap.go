@@ -48,16 +48,22 @@
 
 package dijkstra
 
-type candidate[vertex V, edge E, length L] struct {
-	to    vertex
-	via   edge
-	total length
-	prev  *candidate[vertex, edge, length]
+type subPath[vertex V, edge E, length L] struct {
+	to        vertex
+	finalEdge edge
+	total     length
+	prev      *subPath[vertex, edge, length]
 }
 
 type heap[vertex V, edge E, length L] struct {
-	candidates []*candidate[vertex, edge, length]
+	candidates []*subPath[vertex, edge, length]
 	index      map[vertex]int
+}
+
+func newHeap[vertex V, edge E, length L]() *heap[vertex, edge, length] {
+	return &heap[vertex, edge, length]{
+		index: make(map[vertex]int),
+	}
 }
 
 func (h *heap[vertex, edge, length]) Less(i, j int) bool {
@@ -65,24 +71,23 @@ func (h *heap[vertex, edge, length]) Less(i, j int) bool {
 	return cand[i].total < cand[j].total
 }
 
-// Push pushes the element x onto the heap.
-// The complexity is O(log n) where n = h.Len().
-func (h *heap[vertex, edge, length]) Push(cand *candidate[vertex, edge, length]) {
+// Add pushes the element x onto the heap.
+// The complexity is O(log n) where n = len(h.candidates).
+func (h *heap[vertex, edge, length]) Add(cand *subPath[vertex, edge, length]) {
 	n := len(h.candidates)
 	h.candidates = append(h.candidates, cand)
 	h.up(n)
 }
 
-// Pop removes and returns the minimum element (according to Less) from the heap.
-// The complexity is O(log n) where n = h.Len().
-// Pop is equivalent to Remove(h, 0).
-func (h *heap[vertex, edge, length]) Pop() *candidate[vertex, edge, length] {
+// Shortest removes and returns the shortest sub-path from the heap.
+// The complexity is O(log n) where n = len(h.candidates).
+func (h *heap[vertex, edge, length]) Shortest() *subPath[vertex, edge, length] {
 	cc := h.candidates
 
 	n := len(cc) - 1
 
 	x := cc[0]
-	h.index[x.to] = -1
+	h.index[x.to] = -1 // indicate that the target node has been visited
 
 	if n > 0 {
 		cc[0] = cc[n]
@@ -93,10 +98,9 @@ func (h *heap[vertex, edge, length]) Pop() *candidate[vertex, edge, length] {
 	return x
 }
 
-// Re-establish the heap ordering after the element idx
-// has changed its value.  The complexity is O(log n) where n
-// is the number of candidates.
-func (h *heap[vertex, edge, length]) Fix(idx int) {
+// Re-establish the heap ordering after the element idx has changed its value.
+// The complexity is O(log n) where n is len(h.candidates).
+func (h *heap[vertex, edge, length]) Update(idx int) {
 	if !h.down(idx, len(h.candidates)) {
 		h.up(idx)
 	}
