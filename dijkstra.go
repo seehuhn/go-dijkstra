@@ -108,5 +108,5 @@ func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], sta
 // Errors returned by ShortestPath.
 var (
 	ErrInvalidLength = errors.New("negative edge length")
-	ErrNoPath        = errors.New("path does not exist")
+	ErrNoPath        = errors.New("no path exists")
 )
