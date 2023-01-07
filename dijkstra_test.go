@@ -39,11 +39,17 @@ func (g *BinGraph) Edges(v uint32) []BinEdge {
 	return res
 }
 
-func (g *BinGraph) Length(e BinEdge) float64 {
+func (g *BinGraph) Length(v uint32, e BinEdge) float64 {
+	if e.from != v {
+		panic("wrong edge")
+	}
 	return 1 + 1/float64(e.from)
 }
 
-func (g *BinGraph) To(e BinEdge) uint32 {
+func (g *BinGraph) To(v uint32, e BinEdge) uint32 {
+	if e.from != v {
+		panic("wrong edge")
+	}
 	return e.to
 }
 
@@ -79,11 +85,17 @@ func (g Circle) Edges(n int) []CircEdge {
 	return []CircEdge{{from: n, to: res}}
 }
 
-func (g Circle) Length(e CircEdge) int {
+func (g Circle) Length(v int, e CircEdge) int {
+	if e.from != v {
+		panic("wrong edge")
+	}
 	return 1
 }
 
-func (g Circle) To(e CircEdge) int {
+func (g Circle) To(v int, e CircEdge) int {
+	if e.from != v {
+		panic("wrong edge")
+	}
 	return e.to
 }
 
@@ -122,11 +134,11 @@ func (t BinaryTree) Edges(v uint64) []uint64 {
 	return []uint64{2 * v, 2*v + 1}
 }
 
-func (t BinaryTree) Length(e uint64) int {
+func (t BinaryTree) Length(_ uint64, e uint64) int {
 	return 1
 }
 
-func (t BinaryTree) To(e uint64) uint64 {
+func (t BinaryTree) To(_ uint64, e uint64) uint64 {
 	return e
 }
 
@@ -152,11 +164,11 @@ func (w walk) Edges(v walkPos) []walkPos {
 	}
 }
 
-func (w walk) Length(e walkPos) int {
+func (w walk) Length(_ walkPos, e walkPos) int {
 	return 1
 }
 
-func (w walk) To(e walkPos) walkPos {
+func (w walk) To(_ walkPos, e walkPos) walkPos {
 	return e
 }
 

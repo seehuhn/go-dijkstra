@@ -40,11 +40,11 @@ type Graph[vertex V, edge E, length L] interface {
 	// Edge returns the outgoing edges of the given vertex.
 	Edges(v vertex) []edge
 
-	// Length returns the length of an edge.
-	Length(e edge) length
+	// Length returns the length of edge e starting at vertex v.
+	Length(v vertex, e edge) length
 
-	// To returns the endpoint of an edge.
-	To(e edge) vertex
+	// To returns the endpoint of a edge e starting at vertex v.
+	To(v vertex, e edge) vertex
 }
 
 // ShortestPath returns the shortest path between two vertices.
@@ -57,13 +57,13 @@ func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], sta
 	currentVertex := start
 	for currentVertex != end {
 		for _, e := range g.Edges(currentVertex) {
-			edgeLength := g.Length(e)
+			edgeLength := g.Length(currentVertex, e)
 			if edgeLength < 0 {
 				return nil, ErrInvalidLength
 			}
 			pathLength := prevPathLength + edgeLength
 
-			v := g.To(e)
+			v := g.To(currentVertex, e)
 			idx, ok := pq.index[v]
 			if idx < 0 { // vertex v has already been visited
 				continue
@@ -87,7 +87,11 @@ func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], sta
 			return nil, ErrNoPath
 		}
 		shortestPath = pq.Shortest()
-		currentVertex = g.To(shortestPath.finalEdge)
+		if shortestPath.prev != nil {
+			currentVertex = g.To(shortestPath.prev.to, shortestPath.finalEdge)
+		} else {
+			currentVertex = g.To(start, shortestPath.finalEdge)
+		}
 		prevPathLength = shortestPath.total
 	}
 
