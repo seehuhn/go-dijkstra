@@ -49,13 +49,19 @@ type Graph[vertex V, edge E, length L] interface {
 
 // ShortestPath returns the shortest path between two vertices.
 func ShortestPath[vertex V, edge E, length L](g Graph[vertex, edge, length], start, end vertex) ([]edge, error) {
+	return ShortestPathSet(g, start, func(v vertex) bool { return v == end })
+}
+
+// ShortestPathSet returns the shortest path from vertex start to a vertex
+// for which isEnd returns true.
+func ShortestPathSet[vertex V, edge E, length L](g Graph[vertex, edge, length], start vertex, isEnd func(vertex) bool) ([]edge, error) {
 	pq := newHeap[vertex, edge, length]()
 
 	var shortestPath *subPath[vertex, edge, length]
 	var prevPathLength length
 
 	currentVertex := start
-	for currentVertex != end {
+	for !isEnd(currentVertex) {
 		for _, e := range g.Edges(currentVertex) {
 			edgeLength := g.Length(currentVertex, e)
 			if edgeLength < 0 {

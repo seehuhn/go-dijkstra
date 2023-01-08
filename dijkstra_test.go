@@ -20,69 +20,20 @@ import (
 	"testing"
 )
 
-type BinGraph struct{}
-
-type BinEdge struct {
-	from, to uint32
-}
-
-func (g *BinGraph) Edges(v uint32) []BinEdge {
-	var res []BinEdge
-	res = append(res, BinEdge{from: v, to: v + 1})
-	if v > 0 {
-		res = append(res, BinEdge{from: v, to: v - 1})
-	}
-	if v > 0 && v%2 == 0 {
-		res = append(res, BinEdge{from: v, to: v / 2})
-	}
-	res = append(res, BinEdge{from: v, to: 2 * v})
-	return res
-}
-
-func (g *BinGraph) Length(v uint32, e BinEdge) float64 {
-	if e.from != v {
-		panic("wrong edge")
-	}
-	return 1 + 1/float64(e.from)
-}
-
-func (g *BinGraph) To(v uint32, e BinEdge) uint32 {
-	if e.from != v {
-		panic("wrong edge")
-	}
-	return e.to
-}
-
-func TestBinary(t *testing.T) {
-	g := &BinGraph{}
-	path, err := ShortestPath[uint32, BinEdge, float64](g, 100, 1000)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(path) < 2 || path[0].from != 100 || path[len(path)-1].to != 1000 {
-		t.Error("wrong path")
-	}
-	for i := 1; i < len(path); i++ {
-		if path[i].from != path[i-1].to {
-			t.Error("wrong path")
-		}
-	}
-}
-
-type Circle int
+type Circle int // a circle of vertices 0, 1, ..., n-1
 
 type CircEdge struct {
 	from, to int
 }
 
-func (g Circle) Edges(n int) []CircEdge {
+func (g Circle) Edges(v int) []CircEdge {
 	var res int
-	if n >= int(g) {
+	if v >= int(g)-1 {
 		res = 0
 	} else {
-		res = n + 1
+		res = v + 1
 	}
-	return []CircEdge{{from: n, to: res}}
+	return []CircEdge{{from: v, to: res}}
 }
 
 func (g Circle) Length(v int, e CircEdge) int {
@@ -101,15 +52,16 @@ func (g Circle) To(v int, e CircEdge) int {
 
 func TestCircular(t *testing.T) {
 	g := Circle(10)
-	from := 10
+	from := 5
 
-	for _, to := range []int{9, 10, 11} {
+	for _, to := range []int{-1, 0, 1, 2, 3, 4, 5, 6, 7} {
 		path, err := ShortestPath[int, CircEdge, int](g, from, to)
 		switch {
-		case to > 10:
+		case to < 0:
 			if err != ErrNoPath || path != nil {
 				t.Error("wrong path found")
 			}
+			continue
 		case to == from:
 			if err != nil || len(path) != 0 {
 				t.Error("wrong empty path")
@@ -118,12 +70,12 @@ func TestCircular(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			if len(path) != int(to+10-from)%10+1 {
-				t.Error("wrong path length")
-			}
 			if path[0].from != from || path[len(path)-1].to != to {
 				t.Error("wrong path")
 			}
+		}
+		if len(path) != int(to-from+10)%10 {
+			t.Errorf("wrong path length %d for %d -> %d", len(path), from, to)
 		}
 	}
 }
@@ -140,6 +92,20 @@ func (t BinaryTree) Length(_ uint64, e uint64) int {
 
 func (t BinaryTree) To(_ uint64, e uint64) uint64 {
 	return e
+}
+
+func TestBinaryTree(t *testing.T) {
+	g := &BinaryTree{}
+	path, err := ShortestPath[uint64, uint64, int](g, 1, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(path) != 9 {
+		t.Error("wrong path length")
+	}
+	if path[0] != 3 || path[len(path)-1] != 1000 {
+		t.Error("wrong path")
+	}
 }
 
 func BenchmarkBinaryTree(b *testing.B) {
@@ -175,6 +141,55 @@ func (w walk) To(_ walkPos, e walkPos) walkPos {
 func BenchmarkWalk(b *testing.B) {
 	g := &walk{}
 	for i := 0; i < b.N; i++ {
-		ShortestPath[walkPos, walkPos, int](g, walkPos{}, walkPos{x: 4, y: 6})
+		ShortestPath[walkPos, walkPos, int](g, walkPos{x: 0, y: 0}, walkPos{x: 4, y: 6})
+	}
+}
+
+type FunnyGraph struct{}
+
+type FunnyEdge struct {
+	from, to uint32
+}
+
+func (g *FunnyGraph) Edges(v uint32) []FunnyEdge {
+	var res []FunnyEdge
+	res = append(res, FunnyEdge{from: v, to: v + 1})
+	if v > 0 {
+		res = append(res, FunnyEdge{from: v, to: v - 1})
+	}
+	if v > 0 && v%2 == 0 {
+		res = append(res, FunnyEdge{from: v, to: v / 2})
+	}
+	res = append(res, FunnyEdge{from: v, to: 2 * v})
+	return res
+}
+
+func (g *FunnyGraph) Length(v uint32, e FunnyEdge) float64 {
+	if e.from != v {
+		panic("wrong edge")
+	}
+	return 1 + 1/float64(e.from)
+}
+
+func (g *FunnyGraph) To(v uint32, e FunnyEdge) uint32 {
+	if e.from != v {
+		panic("wrong edge")
+	}
+	return e.to
+}
+
+func TestFunny(t *testing.T) {
+	g := &FunnyGraph{}
+	path, err := ShortestPath[uint32, FunnyEdge, float64](g, 100, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(path) < 2 || path[0].from != 100 || path[len(path)-1].to != 1000 {
+		t.Error("wrong path")
+	}
+	for i := 1; i < len(path); i++ {
+		if path[i].from != path[i-1].to {
+			t.Error("wrong path")
+		}
 	}
 }
