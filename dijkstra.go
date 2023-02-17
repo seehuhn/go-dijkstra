@@ -37,13 +37,13 @@ type L interface {
 
 // Graph represents a directed graph.
 type Graph[vertex V, edge E, length L] interface {
-	// Edge returns the outgoing edges of the given vertex.
+	// Edges returns the outgoing edges of the given vertex.
 	Edges(v vertex) []edge
 
 	// Length returns the length of edge e starting at vertex v.
 	Length(v vertex, e edge) length
 
-	// To returns the endpoint of a edge e starting at vertex v.
+	// To returns the endpoint of an edge e starting at vertex v.
 	To(v vertex, e edge) vertex
 }
 
