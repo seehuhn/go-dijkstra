@@ -37,8 +37,8 @@ type L interface {
 
 // Graph represents a directed graph.
 type Graph[vertex V, edge E, length L] interface {
-	// Edges returns the outgoing edges of the given vertex.
-	Edges(v vertex) []edge
+	// AppendEdges apppends all edges starting from a given vertex to a slice.
+	AppendEdges([]edge, vertex) []edge
 
 	// Length returns the length of edge e starting at vertex v.
 	Length(v vertex, e edge) length
@@ -61,8 +61,10 @@ func ShortestPathSet[vertex V, edge E, length L](g Graph[vertex, edge, length], 
 	var prevPathLength length
 
 	currentVertex := start
+	var ee []edge
 	for !isEnd(currentVertex) {
-		for _, e := range g.Edges(currentVertex) {
+		ee = g.AppendEdges(ee[:0], currentVertex)
+		for _, e := range ee {
 			edgeLength := g.Length(currentVertex, e)
 			if edgeLength < 0 {
 				return nil, ErrInvalidLength

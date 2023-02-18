@@ -26,14 +26,14 @@ type CircEdge struct {
 	from, to int
 }
 
-func (g Circle) Edges(v int) []CircEdge {
+func (g Circle) AppendEdges(ee []CircEdge, v int) []CircEdge {
 	var res int
 	if v >= int(g)-1 {
 		res = 0
 	} else {
 		res = v + 1
 	}
-	return []CircEdge{{from: v, to: res}}
+	return append(ee, CircEdge{from: v, to: res})
 }
 
 func (g Circle) Length(v int, e CircEdge) int {
@@ -82,8 +82,8 @@ func TestCircular(t *testing.T) {
 
 type BinaryTree struct{}
 
-func (t BinaryTree) Edges(v uint64) []uint64 {
-	return []uint64{2 * v, 2*v + 1}
+func (t BinaryTree) AppendEdges(ee []uint64, v uint64) []uint64 {
+	return append(ee, 2*v, 2*v+1)
 }
 
 func (t BinaryTree) Length(_ uint64, e uint64) int {
@@ -121,13 +121,12 @@ type walkPos struct {
 
 type walk struct{}
 
-func (w walk) Edges(v walkPos) []walkPos {
-	return []walkPos{
-		{x: v.x + 1, y: v.y},
-		{x: v.x, y: v.y + 1},
-		{x: v.x - 1, y: v.y},
-		{x: v.x, y: v.y - 1},
-	}
+func (w walk) AppendEdges(ee []walkPos, v walkPos) []walkPos {
+	return append(ee,
+		walkPos{x: v.x + 1, y: v.y},
+		walkPos{x: v.x, y: v.y + 1},
+		walkPos{x: v.x - 1, y: v.y},
+		walkPos{x: v.x, y: v.y - 1})
 }
 
 func (w walk) Length(_ walkPos, e walkPos) int {
@@ -151,17 +150,16 @@ type FunnyEdge struct {
 	from, to uint32
 }
 
-func (g *FunnyGraph) Edges(v uint32) []FunnyEdge {
-	var res []FunnyEdge
-	res = append(res, FunnyEdge{from: v, to: v + 1})
+func (g *FunnyGraph) AppendEdges(ee []FunnyEdge, v uint32) []FunnyEdge {
+	ee = append(ee, FunnyEdge{from: v, to: v + 1})
 	if v > 0 {
-		res = append(res, FunnyEdge{from: v, to: v - 1})
+		ee = append(ee, FunnyEdge{from: v, to: v - 1})
 	}
 	if v > 0 && v%2 == 0 {
-		res = append(res, FunnyEdge{from: v, to: v / 2})
+		ee = append(ee, FunnyEdge{from: v, to: v / 2})
 	}
-	res = append(res, FunnyEdge{from: v, to: 2 * v})
-	return res
+	ee = append(ee, FunnyEdge{from: v, to: 2 * v})
+	return ee
 }
 
 func (g *FunnyGraph) Length(v uint32, e FunnyEdge) float64 {
